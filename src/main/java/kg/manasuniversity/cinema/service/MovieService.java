@@ -35,7 +35,7 @@ public class MovieService {
     public MovieResponse getById(Long id) {
         return movieRepository.findById(id)
                 .map(movieMapper::toMovieResponse)
-                .orElseThrow(() -> new RuntimeException("Movie not found"));
+                .orElseThrow(() -> new RuntimeException("Фильм не найден"));
     }
 
     @Transactional
@@ -56,7 +56,7 @@ public class MovieService {
     public void updateMovie(Long id, MovieCreateRequest request) {
         // 1. Ищем существующий фильм по ID
         Movie movie = movieRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Movie not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Фильм не найден c id: " + id));
 
         // 2. Обновляем поля данными из request
         movie.setTitle(request.title());
