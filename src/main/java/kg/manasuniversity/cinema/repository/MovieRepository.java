@@ -10,3 +10,4 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     List<Movie> findAllByIsActiveTrue();
     Optional<Movie> findByIdAndIsActiveTrue(Long id);
 }
+//sout
