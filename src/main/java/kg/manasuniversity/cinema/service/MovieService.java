@@ -33,7 +33,7 @@ public class MovieService {
     }
 
     public MovieResponse getById(Long id) {
-        return movieRepository.findById(id)
+        return movieRepository.findByIdAndIsActiveTrue(id)
                 .map(movieMapper::toMovieResponse)
                 .orElseThrow(() -> new RuntimeException("Фильм не найден"));
     }
