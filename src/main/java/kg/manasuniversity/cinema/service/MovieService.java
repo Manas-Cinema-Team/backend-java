@@ -2,7 +2,7 @@ package kg.manasuniversity.cinema.service;
 
 import java.util.List;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kg.manasuniversity.cinema.dto.request.MovieCreateRequest;
 import kg.manasuniversity.cinema.dto.response.MovieResponse;
 import kg.manasuniversity.cinema.entity.Movie;

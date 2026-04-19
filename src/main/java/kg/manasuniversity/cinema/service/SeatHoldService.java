@@ -1,12 +1,15 @@
 package kg.manasuniversity.cinema.service;
 
 import jakarta.transaction.Transactional;
+import kg.manasuniversity.cinema.dto.request.SeatHoldRequest;
+import kg.manasuniversity.cinema.dto.response.SeatHoldResponse;
 import kg.manasuniversity.cinema.entity.SeatHold;
 import kg.manasuniversity.cinema.entity.SeatStatus;
 import kg.manasuniversity.cinema.entity.Session;
 import kg.manasuniversity.cinema.entity.User;
 import kg.manasuniversity.cinema.repository.SeatHoldRepository;
 import kg.manasuniversity.cinema.repository.SessionRepository;
+import kg.manasuniversity.cinema.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ public class SeatHoldService {
 
     private final SeatHoldRepository seatHoldRepository;
     private final SessionRepository sessionRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public SeatHold holdSeat(Long sessionId, User user, Integer row, Integer seat) {
@@ -74,4 +78,28 @@ public class SeatHoldService {
             System.out.println("Планировщик: Освобождено мест: " + expiredHolds.size());
         }
     }
+
+    /**
+     * Основной метод для обработки запроса от фронтенда (SeatHoldRequest)
+     */
+    @Transactional
+    public SeatHoldResponse holdMultipleSeats(SeatHoldRequest request) {
+        User user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+
+        // Проходим по списку выбранных мест и для каждого вызываем твой holdSeat
+        List<SeatHold> holds = request.selectedSeats().stream()
+                .map(s -> holdSeat(request.sessionId(), user, s.row(), s.number()))
+                .toList();
+
+        // Формируем красивый Response для фронтенда
+        return new SeatHoldResponse(
+                request.sessionId(),
+                holds.get(0).getExpiresAt(), // У всех мест в одном запросе будет одно время истечения
+                holds.stream()
+                        .map(h -> new SeatHoldResponse.HeldSeat(h.getSeatRow(), h.getSeatNumber()))
+                        .toList()
+        );
+    }
+
 }
