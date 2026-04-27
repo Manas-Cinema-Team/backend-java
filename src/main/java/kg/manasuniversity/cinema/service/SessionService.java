@@ -10,6 +10,7 @@ import kg.manasuniversity.cinema.repository.MovieRepository;
 import kg.manasuniversity.cinema.repository.SessionRepository;
 import kg.manasuniversity.cinema.repository.TicketPriceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,9 @@ public class SessionService {
     private final MovieRepository movieRepository;
     private final HallRepository hallRepository;
     private final TicketPriceRepository ticketPriceRepository;
+
+    @Value("${cinema.session.break-time:15}")
+    private int breakTime;
 
     @Transactional
     public SessionResponse createSession(Long movieId, Long hallId, LocalDateTime startTime, BigDecimal price) {
@@ -69,6 +73,11 @@ public class SessionService {
                 price,
                 "SOM"
         );
+    }
+    // Этот метод возвращает чистую сущность для внутренней логики
+    public Session findById(Long id) {
+        return sessionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Сессия не найдена с id: " + id));
     }
 }
 //asdkasd

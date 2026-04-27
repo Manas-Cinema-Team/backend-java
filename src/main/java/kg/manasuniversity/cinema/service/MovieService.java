@@ -2,7 +2,7 @@ package kg.manasuniversity.cinema.service;
 
 import java.util.List;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kg.manasuniversity.cinema.dto.request.MovieCreateRequest;
 import kg.manasuniversity.cinema.dto.response.MovieResponse;
 import kg.manasuniversity.cinema.entity.Movie;
@@ -33,7 +33,7 @@ public class MovieService {
     }
 
     public MovieResponse getById(Long id) {
-        return movieRepository.findById(id)
+        return movieRepository.findByIdAndIsActiveTrue(id)
                 .map(movieMapper::toMovieResponse)
                 .orElseThrow(() -> new RuntimeException("Фильм не найден"));
     }
