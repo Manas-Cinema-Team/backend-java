@@ -13,6 +13,14 @@ import kg.manasuniversity.cinema.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import kg.manasuniversity.cinema.dto.response.SeatMapResponse;
+import kg.manasuniversity.cinema.dto.response.SeatResponse;
+import kg.manasuniversity.cinema.dto.response.PriceResponse;
+import kg.manasuniversity.cinema.entity.Hall;
+import kg.manasuniversity.cinema.entity.TicketPrice;
+import kg.manasuniversity.cinema.repository.TicketPriceRepository;
+import java.math.BigDecimal;
+import java.util.Optional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +33,7 @@ public class SeatHoldService {
     private final SeatHoldRepository seatHoldRepository;
     private final SessionRepository sessionRepository;
     private final UserRepository userRepository;
+    private final TicketPriceRepository ticketPriceRepository;
 
     @Transactional
     public SeatHold holdSeat(Long sessionId, User user, Integer row, Integer seat) {
@@ -100,6 +109,54 @@ public class SeatHoldService {
                         .map(h -> new SeatHoldResponse.HeldSeat(h.getSeatRow(), h.getSeatNumber()))
                         .toList()
         );
+    }
+
+    public SeatMapResponse getSeatMap(Long sessionId, String currentUserEmail) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Сеанс не найден"));
+
+        Hall hall = session.getHall();
+        List<SeatHold> activeHolds = seatHoldRepository
+                .findAllBySessionIdAndExpiresAtAfter(sessionId, LocalDateTime.now());
+
+        // получаем цену сеанса
+        TicketPrice ticketPrice = ticketPriceRepository.findBySessionId(sessionId).orElse(null);
+        BigDecimal amount = ticketPrice != null ? ticketPrice.getAmount() : BigDecimal.ZERO;
+        String currency = ticketPrice != null ? ticketPrice.getCurrency() : "KGS";
+
+        List<SeatResponse> seats = new java.util.ArrayList<>();
+
+        for (int row = 1; row <= hall.getRows(); row++) {
+            for (int number = 1; number <= hall.getSeatsPerRow(); number++) {
+                final int r = row;
+                final int n = number;
+
+                // ищем hold для этого места
+                Optional<SeatHold> hold = activeHolds.stream()
+                        .filter(h -> h.getSeatRow().equals(r) && h.getSeatNumber().equals(n))
+                        .findFirst();
+
+                String status = "available";
+                Boolean heldByMe = false;
+                String expiresAt = null;
+
+                if (hold.isPresent()) {
+                    SeatHold h = hold.get();
+                    status = h.getStatus().name().toLowerCase();
+                    expiresAt = h.getExpiresAt().toString();
+                    heldByMe = currentUserEmail != null &&
+                            h.getUser().getEmail().equals(currentUserEmail);
+                }
+
+                seats.add(new SeatResponse(
+                        row, number, "standard",
+                        status, heldByMe, expiresAt,
+                        new PriceResponse(amount, currency)
+                ));
+            }
+        }
+
+        return new SeatMapResponse(hall.getId(), hall.getName(), seats, 5);
     }
 
 }

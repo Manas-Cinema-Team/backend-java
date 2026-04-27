@@ -2,6 +2,11 @@ package kg.manasuniversity.cinema.service;
 
 import java.util.List;
 
+import kg.manasuniversity.cinema.dto.response.PageResponse;
+import kg.manasuniversity.cinema.dto.response.SessionResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import kg.manasuniversity.cinema.dto.request.MovieCreateRequest;
 import kg.manasuniversity.cinema.dto.response.MovieResponse;
@@ -10,6 +15,8 @@ import kg.manasuniversity.cinema.mapper.MovieMapper;
 import kg.manasuniversity.cinema.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import kg.manasuniversity.cinema.dto.response.SessionResponse;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,12 +24,21 @@ public class MovieService {
 
     private final MovieRepository movieRepository;
     private final MovieMapper movieMapper;
+    private final SessionService sessionService;
 
-    public List<MovieResponse> getAfisha() {
-        return movieRepository.findAllByIsActiveTrue()
+    public PageResponse<MovieResponse> getAfisha(int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page - 1, pageSize);
+        Page<Movie> moviePage = movieRepository.findAllByIsActiveTrue(pageable);
+
+        List<MovieResponse> results = moviePage.getContent()
                 .stream()
                 .map(movieMapper::toMovieResponse)
                 .toList();
+
+        String next = moviePage.hasNext() ? "/api/v1/movies/?page=" + (page + 1) + "&page_size=" + pageSize : null;
+        String previous = moviePage.hasPrevious() ? "/api/v1/movies/?page=" + (page - 1) + "&page_size=" + pageSize : null;
+
+        return new PageResponse<>(moviePage.getTotalElements(), next, previous, results);
     }
 
     public List<MovieResponse> getAllForAdmin() {
@@ -33,9 +49,12 @@ public class MovieService {
     }
 
     public MovieResponse getById(Long id) {
-        return movieRepository.findByIdAndIsActiveTrue(id)
-                .map(movieMapper::toMovieResponse)
+        Movie movie = movieRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new RuntimeException("Фильм не найден"));
+
+        List<SessionResponse> sessions = sessionService.getSessionsByMovie(id);
+
+        return movieMapper.toMovieResponseWithSessions(movie, sessions);
     }
 
     @Transactional
