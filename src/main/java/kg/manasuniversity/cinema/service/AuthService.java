@@ -26,6 +26,14 @@ public class AuthService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("EMAIL_TAKEN");
         }
+        if (request.getPasswordConfirm() != null &&
+                !request.getPassword().equals(request.getPasswordConfirm())) {
+            throw new RuntimeException("PASSWORDS_DONT_MATCH");
+        }
+
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("EMAIL_TAKEN");
+        }
 
         User user = new User(
                 request.getEmail(),
@@ -36,6 +44,7 @@ public class AuthService {
         userRepository.save(user);
 
         return buildAuthResponse(user);
+
     }
 
     public AuthResponse login(AuthRequest request) {

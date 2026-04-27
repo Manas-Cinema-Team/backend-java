@@ -5,14 +5,21 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record BookingResponse(
-        Long bookingId,
-        String movieTitle,      // Добавили для красоты в чеке
-        LocalDateTime sessionTime,
+        Long id,
+        SessionShortResponse session,
+        List<BookingSeatResponse> seats,
         BigDecimal totalAmount,
-        String status,
+        String currency,
+        String bookingStatus,
+        String paymentStatus,
+        LocalDateTime expiresAt,
         LocalDateTime confirmedAt,
-        List<SeatInfo> seats    // Тот самый список мест
+        LocalDateTime createdAt
 ) {
-    // Вложенный рекорд для компактности
-    public record SeatInfo(int row, int number, BigDecimal price) {}
+    public record SessionShortResponse(
+            Long id,
+            String movieTitle,
+            String hallName,
+            LocalDateTime startDatetime
+    ) {}
 }

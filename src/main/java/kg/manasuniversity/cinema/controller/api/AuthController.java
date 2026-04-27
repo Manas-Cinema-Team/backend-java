@@ -1,5 +1,6 @@
-package kg.manasuniversity.cinema.controller;
+package kg.manasuniversity.cinema.controller.api;
 
+import jakarta.validation.Valid;
 import kg.manasuniversity.cinema.dto.auth.AuthRequest;
 import kg.manasuniversity.cinema.dto.auth.AuthResponse;
 import kg.manasuniversity.cinema.service.AuthService;
@@ -18,12 +19,12 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody AuthRequest request) {
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody AuthRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
@@ -39,4 +40,6 @@ public class AuthController {
         // фронт сам удаляет токен из памяти
         return ResponseEntity.ok(Map.of("message", "Logged out"));
     }
+
+
 }

@@ -1,6 +1,6 @@
 package kg.manasuniversity.cinema.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import kg.manasuniversity.cinema.dto.request.SeatHoldRequest;
 import kg.manasuniversity.cinema.dto.response.SeatHoldResponse;
 import kg.manasuniversity.cinema.entity.SeatHold;
@@ -111,7 +111,18 @@ public class SeatHoldService {
         );
     }
 
+    @Transactional
+    public void releaseExpiredHoldsForSession(Long sessionId) {
+        List<SeatHold> expired = seatHoldRepository
+                .findExpiredHoldsBySession(sessionId, LocalDateTime.now());
+
+        if (!expired.isEmpty()) {
+            seatHoldRepository.deleteAll(expired);
+        }
+    }
+
     public SeatMapResponse getSeatMap(Long sessionId, String currentUserEmail) {
+        releaseExpiredHoldsForSession(sessionId);
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Сеанс не найден"));
 
