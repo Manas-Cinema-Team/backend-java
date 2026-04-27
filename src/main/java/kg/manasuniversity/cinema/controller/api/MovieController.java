@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/movies")
 @RequiredArgsConstructor
 public class MovieController {
-
     private final MovieService movieService;
 
     @GetMapping("/afisha")

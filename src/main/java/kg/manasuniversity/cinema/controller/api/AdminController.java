@@ -18,7 +18,6 @@ public class AdminController {
     private final BookingService bookingService;
     private final HallService hallService; // Внедряем HallService
 
-    // --- БРОНИРОВАНИЯ ---
 
     @GetMapping("/sessions/{sessionId}/bookings")
     public ResponseEntity<List<Booking>> getBookingsBySession(@PathVariable Long sessionId) {

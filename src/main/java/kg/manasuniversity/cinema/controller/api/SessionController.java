@@ -17,7 +17,6 @@ public class SessionController {
 
     @PostMapping
     public ResponseEntity<SessionResponse> createSession(@RequestBody SessionRequest request) {
-        // Вызываем сервис
         SessionResponse response = sessionService.createSession(
                 request.movieId(),
                 request.hallId(),
