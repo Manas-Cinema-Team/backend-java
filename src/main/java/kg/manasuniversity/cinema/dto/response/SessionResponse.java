@@ -5,10 +5,11 @@ import java.time.LocalDateTime;
 
 public record SessionResponse(
         Long id,
-        String movieTitle,
-        String hallName,
-        LocalDateTime startTime,
-        LocalDateTime endTime,
-        BigDecimal price,
-        String currency
+        MovieShortResponse movie,
+        HallShortResponse hall,
+        LocalDateTime startDatetime,
+        LocalDateTime endDatetime,
+        PriceResponse price,
+        Boolean isActive,
+        Integer availableSeats
 ) {}
