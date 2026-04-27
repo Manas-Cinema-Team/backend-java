@@ -25,4 +25,19 @@ public interface SeatHoldRepository extends JpaRepository<SeatHold, Long> {
     @Query("SELECT COUNT(s) FROM SeatHold s WHERE s.session.id = :sessionId " +
             "AND s.status IN ('HELD', 'BOOKED') AND s.expiresAt > :now")
     int countActiveBySessionId(@Param("sessionId") Long sessionId, @Param("now") LocalDateTime now);
+
+    @Query("SELECT COUNT(s) FROM SeatHold s WHERE s.session.id = :sessionId " +
+            "AND s.user.id = :userId AND s.expiresAt > :now")
+    int countActiveHoldsByUserAndSession(
+            @Param("sessionId") Long sessionId,
+            @Param("userId") Long userId,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("SELECT s FROM SeatHold s WHERE s.session.id = :sessionId " +
+            "AND s.status = 'HELD' AND s.expiresAt < :now")
+    List<SeatHold> findExpiredHoldsBySession(
+            @Param("sessionId") Long sessionId,
+            @Param("now") LocalDateTime now
+    );
 }

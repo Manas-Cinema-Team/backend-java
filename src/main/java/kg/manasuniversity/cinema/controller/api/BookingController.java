@@ -1,75 +1,55 @@
 package kg.manasuniversity.cinema.controller.api;
 
 import kg.manasuniversity.cinema.dto.request.BookingRequest;
-import kg.manasuniversity.cinema.dto.request.SeatHoldRequest;
 import kg.manasuniversity.cinema.dto.response.BookingResponse;
-import kg.manasuniversity.cinema.dto.response.SeatHoldResponse;
-import kg.manasuniversity.cinema.entity.Booking;
-import kg.manasuniversity.cinema.entity.BookingSeat;
 import kg.manasuniversity.cinema.service.BookingService;
-import kg.manasuniversity.cinema.service.SeatHoldService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/bookings")
+@RequestMapping("/api/v1/bookings")
 @RequiredArgsConstructor
 public class BookingController {
 
     private final BookingService bookingService;
-    private final SeatHoldService seatHoldService; // Добавляем сервис удержания
 
-    /**
-     * ШАГ 1: Удержание мест (Пункт 6.6 ТЗ)
-     */
     @PostMapping
-    public ResponseEntity<SeatHoldResponse> hold(@RequestBody SeatHoldRequest request) {
-        try {
-            SeatHoldResponse response = seatHoldService.holdMultipleSeats(request);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<BookingResponse> createHold(
+            @RequestBody BookingRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getSubject();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(bookingService.createHold(request, email));
     }
 
-    /**
-     * ШАГ 2: Подтверждение брони (Пункт 6.8 ТЗ)
-     */
     @PostMapping("/{id}/confirm")
-    public ResponseEntity<BookingResponse> confirm(@RequestBody BookingRequest request) {
-        try {
-            Booking booking = bookingService.confirmBooking(
-                    request.userId(),
-                    request.sessionId(),
-                    request.seatHoldIds()
-            );
-
-            List<BookingResponse.SeatInfo> seatInfos = booking.getSeats().stream()
-                    .map(s -> new BookingResponse.SeatInfo(s.getSeatRow(), s.getSeatNumber(), s.getPriceAtBooking()))
-                    .toList();
-
-            BookingResponse response = new BookingResponse(
-                    booking.getId(),
-                    booking.getSession().getMovie().getTitle(),
-                    booking.getSession().getStartDatetime(), // Проверь: d или D в сущности Session
-                    booking.getTotalAmount(),
-                    booking.getBookingStatus(),
-                    booking.getConfirmedAt(),
-                    seatInfos
-            );
-
-            return ResponseEntity.ok(response);
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<BookingResponse> confirm(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getSubject();
+        return ResponseEntity.ok(bookingService.confirmBooking(id, email));
     }
-    // BookingController.java
-    @GetMapping("/my-history/{userId}") // В будущем userId будет браться из JWT
-    public ResponseEntity<List<Booking>> getUserHistory(@PathVariable Long userId) {
-        return ResponseEntity.ok(bookingService.getUserHistory(userId));
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> cancel(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getSubject();
+        bookingService.cancelBooking(id, email);
+        return ResponseEntity.ok(Map.of("message", "Cancelled"));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<BookingResponse> getBooking(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getSubject();
+        return ResponseEntity.ok(bookingService.getBooking(id, email));
     }
 }
