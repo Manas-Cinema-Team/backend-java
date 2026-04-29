@@ -1,13 +1,17 @@
 package kg.manasuniversity.cinema.dto.response;
 
+import java.time.LocalDate;
+import java.util.List;
+
 public record MovieResponse(
         Long id,
-        String name,
+        String title,
         String description,
         String genre,
         Integer duration,
         String ageRating,
         String posterUrl,
-        java.time.LocalDate releaseDate,
-        Boolean isActive) {
-}
+        LocalDate releaseDate,
+        Boolean isActive,
+        List<SessionResponse> sessions
+) {}

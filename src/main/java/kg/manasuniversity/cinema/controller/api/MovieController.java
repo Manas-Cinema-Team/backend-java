@@ -1,25 +1,27 @@
 package kg.manasuniversity.cinema.controller.api;
 
-import java.util.List;
-
 import kg.manasuniversity.cinema.dto.request.MovieCreateRequest;
 import kg.manasuniversity.cinema.dto.response.MovieResponse;
+import kg.manasuniversity.cinema.dto.response.PageResponse;
 import kg.manasuniversity.cinema.service.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/movies")
+@RequestMapping("/api/v1/movies")
 @RequiredArgsConstructor
 public class MovieController {
     private final MovieService movieService;
 
-    @GetMapping("/afisha")
-    public ResponseEntity<List<MovieResponse>> getAfisha() {
-        return ResponseEntity.ok(movieService.getAfisha());
+    @GetMapping
+    public ResponseEntity<PageResponse<MovieResponse>> getAfisha(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(name = "page_size", defaultValue = "20") int pageSize) {
+        return ResponseEntity.ok(movieService.getAfisha(page, pageSize));
     }
 
     @GetMapping("/admin/all")
