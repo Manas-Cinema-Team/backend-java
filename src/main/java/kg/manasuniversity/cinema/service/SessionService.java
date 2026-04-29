@@ -139,4 +139,44 @@ public class SessionService {
                 availableSeats
         );
     }
+
+    @Transactional
+    public SessionResponse updateSession(Long id, Instant startTime, BigDecimal price) {
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Сеанс не найден c id: " + id));
+
+        Instant endTime = startTime.plus(
+                session.getMovie().getDuration() + breakTime, ChronoUnit.MINUTES);
+
+        var overlaps = sessionRepository.findOverlappingSessions(
+                        session.getHall().getId(), startTime, endTime)
+                .stream()
+                .filter(s -> !s.getId().equals(id))
+                .toList();
+
+        if (!overlaps.isEmpty()) {
+            throw new RuntimeException("Зал занят в это время другим сеансом!");
+        }
+
+        session.setStartDatetime(startTime);
+        session.setEndDatetime(endTime);
+
+        // обновляем цену
+        TicketPrice ticketPrice = ticketPriceRepository.findBySessionId(id)
+                .orElseThrow(() -> new RuntimeException("Цена не найдена"));
+        ticketPrice.setAmount(price);
+        ticketPriceRepository.save(ticketPrice);
+
+        sessionRepository.save(session);
+        return toSessionResponse(session);
+    }
+
+    @Transactional
+    public void deleteSession(Long id) {
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Сеанс не найден c id: " + id));
+
+        session.setIsActive(false);
+        sessionRepository.save(session);
+    }
 }

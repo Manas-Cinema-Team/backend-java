@@ -10,10 +10,12 @@ import kg.manasuniversity.cinema.service.SessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -67,5 +69,20 @@ public class SessionController {
         }
 
         return ResponseEntity.ok(seatHoldService.getSeatMap(id, email));
+    }
+
+    @PutMapping("/api/admin/sessions/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SessionResponse> updateSession(
+            @PathVariable Long id,
+            @RequestBody SessionRequest request) {
+        return ResponseEntity.ok(sessionService.updateSession(id, request.startTime(), request.price()));
+    }
+
+    @DeleteMapping("/api/admin/sessions/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteSession(@PathVariable Long id) {
+        sessionService.deleteSession(id);
+        return ResponseEntity.ok(Map.of("message", "Session deactivated successfully"));
     }
 }

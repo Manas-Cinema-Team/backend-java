@@ -75,8 +75,7 @@ public class MovieService {
     }
 
     @Transactional
-    public void updateMovie(Long id, MovieCreateRequest request) {
-        // 1. Ищем существующий фильм по ID
+    public MovieResponse updateMovie(Long id, MovieCreateRequest request) {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Фильм не найден c id: " + id));
 
@@ -90,6 +89,18 @@ public class MovieService {
         movie.setIsActive(request.isActive());
 
         movieRepository.save(movie);
+        return movieMapper.toMovieResponse(movie);
+    }
+
+    @Transactional
+    public void deleteMovie(Long id) {
+        Movie movie = movieRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Фильм не найден c id: " + id));
+
+        // мягкое удаление — просто деактивируем
+        movie.setIsActive(false);
+        movieRepository.save(movie);
     }
 }
+
 

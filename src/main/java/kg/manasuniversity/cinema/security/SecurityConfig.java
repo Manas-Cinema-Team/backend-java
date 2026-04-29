@@ -58,6 +58,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/movies/**").permitAll()
                         .requestMatchers("/api/v1/sessions/**").permitAll()
+                        .requestMatchers("/api/v1/admin/**").permitAll()
+
+
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
