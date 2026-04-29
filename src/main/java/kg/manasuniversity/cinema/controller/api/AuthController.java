@@ -40,6 +40,4 @@ public class AuthController {
         // фронт сам удаляет токен из памяти
         return ResponseEntity.ok(Map.of("message", "Logged out"));
     }
-
-
 }

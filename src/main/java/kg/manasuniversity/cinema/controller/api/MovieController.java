@@ -7,6 +7,7 @@ import kg.manasuniversity.cinema.service.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,16 +38,19 @@ public class MovieController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> createMovie(@RequestBody MovieCreateRequest movieCreateRequest) {
         movieService.createMovie(movieCreateRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateMovie(
             @PathVariable Long id,
             @RequestBody MovieCreateRequest movieCreateRequest) {
         movieService.updateMovie(id, movieCreateRequest);
         return ResponseEntity.ok().build();
     }
+
 }

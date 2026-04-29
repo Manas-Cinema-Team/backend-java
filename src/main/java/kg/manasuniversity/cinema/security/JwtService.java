@@ -18,11 +18,12 @@ public class JwtService {
     private String secret;
 
     // access token — 15 минут (по ТЗ)
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(String email, String role) {
         Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(15)));
 
         return Jwts.builder()
                 .subject(email)
+                .claim("role", role)
                 .expiration(expiration)
                 .signWith(getSignKey())
                 .compact();
