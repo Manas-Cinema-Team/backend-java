@@ -2,7 +2,7 @@ package kg.manasuniversity.cinema.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "sessions")
@@ -24,10 +24,10 @@ public class Session {
     private Hall hall;
 
     @Column(name = "start_datetime", nullable = false)
-    private LocalDateTime startDatetime;
+    private Instant startDatetime;
 
     @Column(name = "end_datetime",  nullable = false)
-    private LocalDateTime endDatetime;
+    private Instant endDatetime;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

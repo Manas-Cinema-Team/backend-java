@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 
 @Component
@@ -19,8 +19,7 @@ public class JwtService {
 
     // access token — 15 минут (по ТЗ)
     public String generateAccessToken(String email) {
-        Date expiration = Date.from(LocalDateTime.now().plusMinutes(15)
-                .atZone(ZoneId.systemDefault()).toInstant());
+        Date expiration = Date.from(Instant.now().plus(Duration.ofMinutes(15)));
 
         return Jwts.builder()
                 .subject(email)
@@ -31,8 +30,7 @@ public class JwtService {
 
     // refresh token — 7 дней (по ТЗ)
     public String generateRefreshToken(String email) {
-        Date expiration = Date.from(LocalDateTime.now().plusDays(7)
-                .atZone(ZoneId.systemDefault()).toInstant());
+        Date expiration = Date.from(Instant.now().plus(Duration.ofDays(7)));
 
         return Jwts.builder()
                 .subject(email)

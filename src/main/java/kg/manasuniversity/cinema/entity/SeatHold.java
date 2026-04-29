@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Getter
@@ -28,7 +28,7 @@ public class SeatHold {
     private Integer seatRow;
     private Integer seatNumber;
 
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 
     @Enumerated(EnumType.STRING)
     private SeatStatus status;

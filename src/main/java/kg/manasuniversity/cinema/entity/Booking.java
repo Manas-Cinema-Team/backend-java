@@ -2,10 +2,12 @@ package kg.manasuniversity.cinema.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -15,6 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,10 +42,11 @@ public class Booking {
     private String paymentStatus = "PENDING";
 
     @Column(name = "confirmed_at")
-    private LocalDateTime confirmedAt;
+    private Instant confirmedAt;
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt =  LocalDateTime.now();
+    private Instant createdAt =  Instant.now();
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL)
     private List<BookingSeat> seats;

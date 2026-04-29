@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +37,7 @@ public class BookingService {
                 .orElseThrow(() -> new RuntimeException("Сеанс не найден/ Session not found"));
 
         int activeHolds = seatHoldRepository.countActiveHoldsByUserAndSession(
-                request.sessionId(), user.getId(), LocalDateTime.now());
+                request.sessionId(), user.getId(), Instant.now());
 
         if (activeHolds > 0) {
             throw new RuntimeException("У вас уже есть активное бронирование на этот сеанс/ \n" +
@@ -52,7 +52,7 @@ public class BookingService {
         for (BookingRequest.SeatRequest seat : request.seats()) {
             seatHoldRepository.findBySessionAndSeatRowAndSeatNumber(session, seat.row(), seat.number())
                     .ifPresent(h -> {
-                        if (h.getExpiresAt().isAfter(LocalDateTime.now())) {
+                        if (h.getExpiresAt().isAfter(Instant.now())) {
                             conflictSeats.add(seat);
                         }
                     });
@@ -63,7 +63,7 @@ public class BookingService {
         }
 
         // создаём holds
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
+        Instant expiresAt = Instant.now().plusSeconds(10 * 60);
         for (BookingRequest.SeatRequest seat : request.seats()) {
             SeatHold hold = new SeatHold();
             hold.setSession(session);
@@ -85,7 +85,6 @@ public class BookingService {
                 .totalAmount(total)
                 .bookingStatus("DRAFT")
                 .paymentStatus("PENDING")
-                .createdAt(LocalDateTime.now())
                 .build();
 
         Booking saved = bookingRepository.save(booking);
@@ -103,14 +102,14 @@ public class BookingService {
 
         booking.setBookingStatus("CONFIRMED");
         booking.setPaymentStatus("PAID");
-        booking.setConfirmedAt(LocalDateTime.now());
+        booking.setConfirmedAt(Instant.now());
 
         // переносим holds в BookingSeats
         TicketPrice ticketPrice = ticketPriceRepository.findBySessionId(booking.getSession().getId())
                 .orElseThrow(() -> new RuntimeException("Цена не найдена/ Price not found"));
 
         List<SeatHold> holds = seatHoldRepository
-                .findAllBySessionIdAndExpiresAtAfter(booking.getSession().getId(), LocalDateTime.now());
+                .findAllBySessionIdAndExpiresAtAfter(booking.getSession().getId(), Instant.now());
 
         for (SeatHold hold : holds) {
             BookingSeat seat = new BookingSeat();
@@ -150,7 +149,7 @@ public class BookingService {
         return toBookingResponse(booking, null);
     }
 
-    private BookingResponse toBookingResponse(Booking booking, LocalDateTime expiresAt) {
+    private BookingResponse toBookingResponse(Booking booking, Instant expiresAt) {
         List<BookingSeatResponse> seats = booking.getSeats() != null
                 ? booking.getSeats().stream()
                 .map(s -> new BookingSeatResponse(

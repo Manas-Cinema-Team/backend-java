@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,8 +20,8 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
             "AND ((s.startDatetime < :end AND s.endDatetime > :start))")
     List<Session> findOverlappingSessions(
             @Param("hallId") Long hallId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
+            @Param("start") Instant start,
+            @Param("end") Instant end
     );
 
     List<Session> findAllByIsActiveTrue();
