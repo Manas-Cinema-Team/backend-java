@@ -80,7 +80,6 @@ public class MovieService {
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Фильм не найден c id: " + id));
 
-        // 2. Обновляем поля данными из request
         movie.setTitle(request.title());
         movie.setGenre(request.genre());
         movie.setDuration(request.duration());
@@ -90,7 +89,6 @@ public class MovieService {
         movie.setReleaseDate(request.releaseDate());
         movie.setIsActive(request.isActive());
 
-        // 3. Сохраняем обновленный объект
         movieRepository.save(movie);
     }
 }

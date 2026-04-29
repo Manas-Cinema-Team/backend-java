@@ -13,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -66,15 +67,14 @@ public class SessionService {
     }
 
     @Transactional
-    public SessionResponse createSession(Long movieId, Long hallId, LocalDateTime startTime, BigDecimal price) {
+    public SessionResponse createSession(Long movieId, Long hallId, Instant startTime, BigDecimal price) {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new RuntimeException("Фильм не найден"));
 
         Hall hall = hallRepository.findById(hallId)
                 .orElseThrow(() -> new RuntimeException("Зал не найден"));
 
-        LocalDateTime endTime = startTime.plusMinutes(movie.getDuration()).plusMinutes(breakTime);
-
+        Instant endTime = startTime.plus(movie.getDuration() + breakTime, ChronoUnit.MINUTES);
         var overlaps = sessionRepository.findOverlappingSessions(hallId, startTime, endTime);
         if (!overlaps.isEmpty()) {
             throw new RuntimeException("Зал занят в это время другим сеансом!");
@@ -114,7 +114,7 @@ public class SessionService {
                 : new PriceResponse(BigDecimal.ZERO, "KGS");
 
         int totalSeats = session.getHall().getRows() * session.getHall().getSeatsPerRow();
-        int heldOrBooked = seatHoldRepository.countActiveBySessionId(session.getId(), LocalDateTime.now());
+        int heldOrBooked = seatHoldRepository.countActiveBySessionId(session.getId(), Instant.now());
         int availableSeats = totalSeats - heldOrBooked;
 
         return new SessionResponse(
