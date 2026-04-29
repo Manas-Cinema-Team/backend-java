@@ -15,8 +15,6 @@ import kg.manasuniversity.cinema.mapper.MovieMapper;
 import kg.manasuniversity.cinema.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import kg.manasuniversity.cinema.dto.response.SessionResponse;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,9 +24,14 @@ public class MovieService {
     private final MovieMapper movieMapper;
     private final SessionService sessionService;
 
-    public PageResponse<MovieResponse> getAfisha(int page, int pageSize) {
+    public PageResponse<MovieResponse> getAfisha(int page, int pageSize, String genre, String search) {
         Pageable pageable = PageRequest.of(page - 1, pageSize);
-        Page<Movie> moviePage = movieRepository.findAllByIsActiveTrue(pageable);
+
+        // если пустая строка — считаем как null
+        String genreParam = (genre != null && !genre.isBlank()) ? genre : null;
+        String searchParam = (search != null && !search.isBlank()) ? search : null;
+
+        Page<Movie> moviePage = movieRepository.findAllByFilters(genreParam, searchParam, pageable);
 
         List<MovieResponse> results = moviePage.getContent()
                 .stream()
@@ -90,5 +93,5 @@ public class MovieService {
         // 3. Сохраняем обновленный объект
         movieRepository.save(movie);
     }
-    }
+}
 

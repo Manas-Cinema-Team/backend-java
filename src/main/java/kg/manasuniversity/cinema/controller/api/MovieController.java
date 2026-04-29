@@ -20,8 +20,10 @@ public class MovieController {
     @GetMapping
     public ResponseEntity<PageResponse<MovieResponse>> getAfisha(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(name = "page_size", defaultValue = "20") int pageSize) {
-        return ResponseEntity.ok(movieService.getAfisha(page, pageSize));
+            @RequestParam(name = "page_size", defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(movieService.getAfisha(page, pageSize, genre, search));
     }
 
     @GetMapping("/admin/all")

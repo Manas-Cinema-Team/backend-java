@@ -1,4 +1,10 @@
 package kg.manasuniversity.cinema.dto.response;
 
-public class BookingSeatResponse {
-}
+import java.math.BigDecimal;
+
+public record BookingSeatResponse(
+        Integer row,
+        Integer number,
+        String type,
+        BigDecimal priceAtBooking
+) {}
