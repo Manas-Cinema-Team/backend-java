@@ -1,6 +1,7 @@
 package kg.manasuniversity.cinema.dto.response;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 public record SeatResponse(
         Integer row,
@@ -8,6 +9,6 @@ public record SeatResponse(
         String type,
         String status,
         Boolean heldByMe,
-        String expiresAt,
+        Instant expiresAt,
         PriceResponse price
 ) {}

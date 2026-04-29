@@ -1,7 +1,6 @@
 package kg.manasuniversity.cinema.dto.response;
-
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record BookingResponse(
@@ -12,14 +11,14 @@ public record BookingResponse(
         String currency,
         String bookingStatus,
         String paymentStatus,
-        LocalDateTime expiresAt,
-        LocalDateTime confirmedAt,
-        LocalDateTime createdAt
+        Instant expiresAt,
+        Instant confirmedAt,
+        Instant createdAt
 ) {
     public record SessionShortResponse(
             Long id,
             String movieTitle,
             String hallName,
-            LocalDateTime startDatetime
+            Instant startDatetime
     ) {}
 }

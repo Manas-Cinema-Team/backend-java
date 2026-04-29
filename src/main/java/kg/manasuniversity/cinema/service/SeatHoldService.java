@@ -20,11 +20,11 @@ import kg.manasuniversity.cinema.entity.Hall;
 import kg.manasuniversity.cinema.entity.TicketPrice;
 import kg.manasuniversity.cinema.repository.TicketPriceRepository;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Optional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +43,7 @@ public class SeatHoldService {
         Optional<SeatHold> existingHold = seatHoldRepository
                 .findBySessionAndSeatRowAndSeatNumber(session, row, seat);
 
-        if (existingHold.isPresent() && existingHold.get().getExpiresAt().isAfter(LocalDateTime.now())) {
+        if (existingHold.isPresent() && existingHold.get().getExpiresAt().isAfter(Instant.now())) {
             throw new RuntimeException("Место уже удерживается другим пользователем");
         }
 
@@ -56,7 +56,7 @@ public class SeatHoldService {
         hold.setSeatRow(row);
         hold.setSeatNumber(seat);
         hold.setStatus(SeatStatus.HELD);
-        hold.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        hold.setExpiresAt(Instant.now().plus(Duration.ofMinutes(10)));
 
         return seatHoldRepository.save(hold);
     }
@@ -66,7 +66,7 @@ public class SeatHoldService {
      * Теперь метод в Repository перестанет быть серым!
      */
     public List<SeatHold> getActiveHolds(Long sessionId) {
-        return seatHoldRepository.findAllBySessionIdAndExpiresAtAfter(sessionId, LocalDateTime.now());
+        return seatHoldRepository.findAllBySessionIdAndExpiresAtAfter(sessionId, Instant.now());
     }
 
     /**
@@ -75,7 +75,7 @@ public class SeatHoldService {
     @Scheduled(fixedRate = 60000)
     @Transactional
     public void releaseExpiredHolds() {
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
         List<SeatHold> expiredHolds = seatHoldRepository.findAllByExpiresAtBeforeAndStatus(
                 now,
@@ -114,7 +114,7 @@ public class SeatHoldService {
     @Transactional
     public void releaseExpiredHoldsForSession(Long sessionId) {
         List<SeatHold> expired = seatHoldRepository
-                .findExpiredHoldsBySession(sessionId, LocalDateTime.now());
+                .findExpiredHoldsBySession(sessionId, Instant.now());
 
         if (!expired.isEmpty()) {
             seatHoldRepository.deleteAll(expired);
@@ -128,7 +128,7 @@ public class SeatHoldService {
 
         Hall hall = session.getHall();
         List<SeatHold> activeHolds = seatHoldRepository
-                .findAllBySessionIdAndExpiresAtAfter(sessionId, LocalDateTime.now());
+                .findAllBySessionIdAndExpiresAtAfter(sessionId, Instant.now());
 
         // получаем цену сеанса
         TicketPrice ticketPrice = ticketPriceRepository.findBySessionId(sessionId).orElse(null);
@@ -149,12 +149,12 @@ public class SeatHoldService {
 
                 String status = "available";
                 Boolean heldByMe = false;
-                String expiresAt = null;
+                Instant expiresAt = null;
 
                 if (hold.isPresent()) {
                     SeatHold h = hold.get();
                     status = h.getStatus().name().toLowerCase();
-                    expiresAt = h.getExpiresAt().toString();
+                    expiresAt = h.getExpiresAt();
                     heldByMe = currentUserEmail != null &&
                             h.getUser().getEmail().equals(currentUserEmail);
                 }
