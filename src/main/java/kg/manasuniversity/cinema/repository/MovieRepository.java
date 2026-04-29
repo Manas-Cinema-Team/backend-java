@@ -15,6 +15,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     List<Movie> findAllByIsActiveTrue();
     Page<Movie> findAllByIsActiveTrue(Pageable pageable); // добавили
     Optional<Movie> findByIdAndIsActiveTrue(Long id);
+    long countByIsActiveTrue();
 
     @Query("SELECT m FROM Movie m WHERE m.isActive = true " +
             "AND (:genre IS NULL OR :genre = '' OR m.genre = :genre) " +

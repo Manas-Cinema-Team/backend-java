@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/movies")
@@ -46,11 +47,17 @@ public class MovieController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> updateMovie(
+    public ResponseEntity<MovieResponse> updateMovie(
             @PathVariable Long id,
             @RequestBody MovieCreateRequest movieCreateRequest) {
-        movieService.updateMovie(id, movieCreateRequest);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(movieService.updateMovie(id, movieCreateRequest));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteMovie(@PathVariable Long id) {
+        movieService.deleteMovie(id);
+        return ResponseEntity.ok(Map.of("message", "Film deactivated successfully"));
     }
 
 }

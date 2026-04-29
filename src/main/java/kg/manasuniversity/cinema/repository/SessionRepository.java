@@ -29,6 +29,7 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     List<Session> findAllByMovieIdAndIsActiveTrue(Long movieId);
 
     Optional<Session> findByIdAndIsActiveTrue(Long id);
+    long countByIsActiveTrue();
 
     @Query("SELECT s FROM Session s WHERE s.isActive = true " +
             "AND (:date IS NULL OR CAST(s.startDatetime AS date) = :date) " +
