@@ -2,8 +2,11 @@ package kg.manasuniversity.cinema.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.security.access.AccessDeniedException;
+
 
 import java.util.Map;
 
@@ -45,7 +48,7 @@ public class GlobalExceptionHandler {
         if (ex.getMessage().equals("EMAIL_TAKEN")) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                     "error", "EMAIL_TAKEN",
-                    "message", "Email уже используется"
+                    "message", "Email уже используется/ Email is already taken"
             ));
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
@@ -64,8 +67,25 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                 "error", "VALIDATION_ERROR",
-                "message", "Ошибка валидации",
+                "message", "Ошибка валидации/ Valdation error",
                 "details", details
+        ));
+    }
+
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "FORBIDDEN",
+                "message", "Нет прав доступа/ no access rights"
+        ));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "error", "INVALID_CREDENTIALS",
+                "message", "Неверный email или пароль"
         ));
     }
 }

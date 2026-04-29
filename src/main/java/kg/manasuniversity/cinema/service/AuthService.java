@@ -72,7 +72,7 @@ public class AuthService {
 
     // общий метод чтобы не дублировать код
     private AuthResponse buildAuthResponse(User user) {
-        String accessToken = jwtService.generateAccessToken(user.getEmail());
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
         UserDto userDto = new UserDto();
