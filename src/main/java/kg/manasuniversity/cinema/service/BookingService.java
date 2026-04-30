@@ -4,6 +4,8 @@ import kg.manasuniversity.cinema.dto.request.BookingRequest;
 import kg.manasuniversity.cinema.dto.response.BookingResponse;
 import kg.manasuniversity.cinema.dto.response.BookingSeatResponse;
 import kg.manasuniversity.cinema.entity.*;
+import kg.manasuniversity.cinema.exception.ActiveHoldExistsException;
+import kg.manasuniversity.cinema.exception.HoldExpiredException;
 import kg.manasuniversity.cinema.exception.SeatHeldException;
 import kg.manasuniversity.cinema.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -36,26 +38,35 @@ public class BookingService {
         Session session = sessionRepository.findByIdAndIsActiveTrue(request.sessionId())
                 .orElseThrow(() -> new RuntimeException("Сеанс не найден/ Session not found"));
 
-        int activeHolds = seatHoldRepository.countActiveHoldsByUserAndSession(
-                request.sessionId(), user.getId(), Instant.now());
-
-        if (activeHolds > 0) {
-            throw new RuntimeException("У вас уже есть активное бронирование на этот сеанс/ \n" +
-                    "You already have an active booking for this session ");
+        // если у пользователя уже есть активный draft на этот сеанс — отдаём ACTIVE_HOLD_EXISTS
+        List<Booking> drafts = bookingRepository.findDraftByUserAndSession(user.getId(), request.sessionId());
+        for (Booking existing : drafts) {
+            if (existing.getExpiresAt() != null && existing.getExpiresAt().isAfter(Instant.now())) {
+                throw new ActiveHoldExistsException(existing.getId());
+            }
         }
 
         TicketPrice ticketPrice = ticketPriceRepository.findBySessionId(request.sessionId())
                 .orElseThrow(() -> new RuntimeException("Цена не найдена/ Price not found"));
 
-        // проверяем что все места свободны
+        // проверяем, что нет конфликтующих holds от других пользователей либо подтверждённых мест
         List<BookingRequest.SeatRequest> conflictSeats = new ArrayList<>();
+        Instant now = Instant.now();
         for (BookingRequest.SeatRequest seat : request.seats()) {
             seatHoldRepository.findBySessionAndSeatRowAndSeatNumber(session, seat.row(), seat.number())
                     .ifPresent(h -> {
-                        if (h.getExpiresAt().isAfter(Instant.now())) {
+                        if (h.getExpiresAt().isAfter(now) && !h.getUser().getId().equals(user.getId())) {
                             conflictSeats.add(seat);
                         }
                     });
+
+            boolean alreadyBooked = bookingSeatRepository.findAllConfirmedBySessionId(request.sessionId())
+                    .stream()
+                    .anyMatch(b -> b.getSeatRow().equals(seat.row())
+                            && b.getSeatNumber().equals(seat.number()));
+            if (alreadyBooked && !conflictSeats.contains(seat)) {
+                conflictSeats.add(seat);
+            }
         }
 
         if (!conflictSeats.isEmpty()) {
@@ -75,7 +86,6 @@ public class BookingService {
             seatHoldRepository.save(hold);
         }
 
-        // создаём booking со статусом draft
         BigDecimal total = ticketPrice.getAmount()
                 .multiply(new BigDecimal(request.seats().size()));
 
@@ -85,10 +95,25 @@ public class BookingService {
                 .totalAmount(total)
                 .bookingStatus("DRAFT")
                 .paymentStatus("PENDING")
+                .expiresAt(expiresAt)
                 .build();
 
         Booking saved = bookingRepository.save(booking);
-        return toBookingResponse(saved, expiresAt);
+
+        // материализуем seats для ответа (price_at_booking фиксируется уже здесь)
+        List<BookingSeat> draftSeats = new ArrayList<>();
+        for (BookingRequest.SeatRequest s : request.seats()) {
+            BookingSeat seat = new BookingSeat();
+            seat.setBooking(saved);
+            seat.setSeatRow(s.row());
+            seat.setSeatNumber(s.number());
+            seat.setPriceAtBooking(ticketPrice.getAmount());
+            draftSeats.add(seat);
+        }
+        bookingSeatRepository.saveAll(draftSeats);
+        saved.setSeats(draftSeats);
+
+        return toBookingResponse(saved);
     }
 
     @Transactional
@@ -100,29 +125,29 @@ public class BookingService {
             throw new RuntimeException("FORBIDDEN");
         }
 
+        if ("CONFIRMED".equals(booking.getBookingStatus())) {
+            return toBookingResponse(booking);
+        }
+
+        if (booking.getExpiresAt() == null || booking.getExpiresAt().isBefore(Instant.now())) {
+            throw new HoldExpiredException();
+        }
+
         booking.setBookingStatus("CONFIRMED");
         booking.setPaymentStatus("PAID");
         booking.setConfirmedAt(Instant.now());
 
-        // переносим holds в BookingSeats
-        TicketPrice ticketPrice = ticketPriceRepository.findBySessionId(booking.getSession().getId())
-                .orElseThrow(() -> new RuntimeException("Цена не найдена/ Price not found"));
-
+        // удаляем holds — место подтверждено навсегда
         List<SeatHold> holds = seatHoldRepository
                 .findAllBySessionIdAndExpiresAtAfter(booking.getSession().getId(), Instant.now());
-
         for (SeatHold hold : holds) {
-            BookingSeat seat = new BookingSeat();
-            seat.setBooking(booking);
-            seat.setSeatRow(hold.getSeatRow());
-            seat.setSeatNumber(hold.getSeatNumber());
-            seat.setPriceAtBooking(ticketPrice.getAmount());
-            bookingSeatRepository.save(seat);
-            seatHoldRepository.delete(hold);
+            if (hold.getUser().getId().equals(booking.getUser().getId())) {
+                seatHoldRepository.delete(hold);
+            }
         }
 
         Booking confirmed = bookingRepository.save(booking);
-        return toBookingResponse(confirmed, null);
+        return toBookingResponse(confirmed);
     }
 
     @Transactional
@@ -134,7 +159,17 @@ public class BookingService {
             throw new RuntimeException("FORBIDDEN");
         }
 
+        // освобождаем места: удаляем holds этого пользователя для этого сеанса
+        List<SeatHold> holds = seatHoldRepository
+                .findAllBySessionIdAndExpiresAtAfter(booking.getSession().getId(), Instant.now());
+        for (SeatHold hold : holds) {
+            if (hold.getUser().getId().equals(booking.getUser().getId())) {
+                seatHoldRepository.delete(hold);
+            }
+        }
+
         booking.setBookingStatus("CANCELLED");
+        booking.setExpiresAt(null);
         bookingRepository.save(booking);
     }
 
@@ -146,10 +181,10 @@ public class BookingService {
             throw new RuntimeException("FORBIDDEN");
         }
 
-        return toBookingResponse(booking, null);
+        return toBookingResponse(booking);
     }
 
-    private BookingResponse toBookingResponse(Booking booking, Instant expiresAt) {
+    private BookingResponse toBookingResponse(Booking booking) {
         List<BookingSeatResponse> seats = booking.getSeats() != null
                 ? booking.getSeats().stream()
                 .map(s -> new BookingSeatResponse(
@@ -157,23 +192,38 @@ public class BookingService {
                 .toList()
                 : List.of();
 
+        Instant expiresAt = "DRAFT".equals(booking.getBookingStatus())
+                ? booking.getExpiresAt()
+                : null;
+
         return new BookingResponse(
                 booking.getId(),
                 new BookingResponse.SessionShortResponse(
                         booking.getSession().getId(),
-                        booking.getSession().getMovie().getTitle(),
-                        booking.getSession().getHall().getName(),
+                        new BookingResponse.MovieRef(booking.getSession().getMovie().getTitle()),
+                        new BookingResponse.HallRef(booking.getSession().getHall().getName()),
                         booking.getSession().getStartDatetime()
                 ),
                 seats,
                 booking.getTotalAmount(),
                 "KGS",
-                booking.getBookingStatus(),
-                booking.getPaymentStatus(),
+                bookingStatusToContract(booking.getBookingStatus()),
+                paymentStatusToContract(booking.getPaymentStatus()),
                 expiresAt,
+                Instant.now(),
                 booking.getConfirmedAt(),
                 booking.getCreatedAt()
         );
+    }
+
+    private String bookingStatusToContract(String status) {
+        if (status == null) return "draft";
+        return status.toLowerCase();
+    }
+
+    private String paymentStatusToContract(String status) {
+        if (status == null) return "pending";
+        return status.toLowerCase();
     }
 
     public List<Booking> getBookingsBySession(Long sessionId) {

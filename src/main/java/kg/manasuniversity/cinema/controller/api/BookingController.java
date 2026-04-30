@@ -31,6 +31,7 @@ public class BookingController {
     @PostMapping("/{id}/confirm")
     public ResponseEntity<BookingResponse> confirm(
             @PathVariable Long id,
+            @RequestBody(required = false) Map<String, Object> body,
             @AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getSubject();
         return ResponseEntity.ok(bookingService.confirmBooking(id, email));
