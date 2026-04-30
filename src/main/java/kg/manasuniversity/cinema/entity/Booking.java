@@ -44,6 +44,9 @@ public class Booking {
     @Column(name = "confirmed_at")
     private Instant confirmedAt;
 
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false)
     private Instant createdAt =  Instant.now();

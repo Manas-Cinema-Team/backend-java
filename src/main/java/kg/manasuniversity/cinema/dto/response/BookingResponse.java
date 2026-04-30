@@ -1,4 +1,5 @@
 package kg.manasuniversity.cinema.dto.response;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -12,13 +13,18 @@ public record BookingResponse(
         String bookingStatus,
         String paymentStatus,
         Instant expiresAt,
+        Instant serverTime,
         Instant confirmedAt,
         Instant createdAt
 ) {
     public record SessionShortResponse(
             Long id,
-            String movieTitle,
-            String hallName,
+            MovieRef movie,
+            HallRef hall,
             Instant startDatetime
     ) {}
+
+    public record MovieRef(String title) {}
+
+    public record HallRef(String name) {}
 }

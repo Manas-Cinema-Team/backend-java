@@ -25,6 +25,7 @@ public class SessionService {
     private final HallRepository hallRepository;
     private final TicketPriceRepository ticketPriceRepository;
     private final SeatHoldRepository seatHoldRepository;
+    private final BookingSeatRepository bookingSeatRepository;
 
     @Value("${cinema.session.break-time:15}")
     private int breakTime;
@@ -115,7 +116,8 @@ public class SessionService {
 
         int totalSeats = session.getHall().getRows() * session.getHall().getSeatsPerRow();
         int heldOrBooked = seatHoldRepository.countActiveBySessionId(session.getId(), Instant.now());
-        int availableSeats = totalSeats - heldOrBooked;
+        int confirmed = bookingSeatRepository.findAllConfirmedBySessionId(session.getId()).size();
+        int availableSeats = Math.max(0, totalSeats - heldOrBooked - confirmed);
 
         return new SessionResponse(
                 session.getId(),
